@@ -8,9 +8,9 @@ import (
 	watch2 "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/a_test_pkg/02_watch/mylisterwatcher"
 	"k8s.io/client-go/a_test_pkg/02_watch/mystore"
+	. "k8s.io/client-go/a_test_pkg/02_watch/mystore"
 	"k8s.io/client-go/tools/cache"
 	"math/rand"
-	"sync"
 )
 
 func NewInformer(lw *mylisterwatcher.ListerWatcherImp,
@@ -132,44 +132,4 @@ func (this *Informer) Run(stopCh chan struct{}) {
 		}
 	}()
 	<-stopCh
-}
-
-// 简单indexer
-type Indexer struct {
-	lock    sync.RWMutex
-	data    map[string]interface{}
-	keyFunc mystore.MyKeyFunc
-}
-
-func (this *Indexer) Add(obj interface{}) {
-	this.Update(obj)
-}
-func (this *Indexer) Update(obj interface{}) {
-	this.lock.Lock()
-	defer this.lock.Unlock()
-	key, _ := this.keyFunc(obj)
-	this.data[key] = obj
-}
-func (this *Indexer) Delete(obj interface{}) {
-	this.lock.Lock()
-	defer this.lock.Unlock()
-	key, _ := this.keyFunc(obj)
-	delete(this.data, key)
-}
-func (this *Indexer) GetByKey(key string) (interface{}, bool) {
-	this.lock.RLock()
-	defer this.lock.RUnlock()
-	v, exist := this.data[key]
-	return v, exist
-}
-func (this *Indexer) Get(obj interface{}) (interface{}, bool) {
-	key, _ := this.keyFunc(obj)
-	return this.GetByKey(key)
-}
-
-func NewIndexer(keyFunc mystore.MyKeyFunc) *Indexer {
-	return &Indexer{
-		data:    map[string]interface{}{},
-		keyFunc: keyFunc,
-	}
 }
